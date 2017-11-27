@@ -1,31 +1,21 @@
 
 #Gad, Abdi, Kieran
 
-import json
-from __future__ import division, print_function, absolute_import
 import numpy as np
-from skimage import color, io
-from sklearn.cross_validation import train_test_split
+import pandas as pd
 
-#function for loading the data stored in the json files that contain the training
-#and testing files
 
-def openData():
-    #loading training data
-with open("train.json") as json_file:  # need to fill with the correct path for train data
-    trainData  = json.load(json_file)
-    trainingX=[]
-    #Gad mentioned joining the 2 bands. Here is a rough suggestion.
-    for j, row in trainingX.iterrows():
-        traininingX.append([np.array(row['band_1']), np.array(row['band_2'])])
-  trainingX = np.array(trainingX)
+#functionless loading of data
+#loading train data
+train_data = pd.read_json('Data/train.json')
+train_images = train_data.apply(lambda rows: [np.stack([rows['band_1'], rows['band_2']], -1).reshape((75, 75, 2))],1)
+train_images = np.stack(train_data).squeeze()
+print("Training Data: ", train_data.shape)
+print("Training Image Data: ", train_images.shape)
 
-  #loading testing data
-
-  with open("test.json") as json_file:  # need to fill with the correct path for test data 
-      testData = json.load(json_file)
-      testX=[]
-      #Gad mentioned joining the 2 bands. Here is a rough suggestion.
-      for k, row in testData.iterrows():
-          testX.append([np.array(row['band_1']), np.array(row['band_2'])])
-    testX = np.array(testX)
+#loading test data
+test_data= pd.read_json('Data/test.json')
+test_images= test_data.apply(lambda rows: [np.stack([rows['band_1'], rows['band_2']], -1).reshape((75, 75, 2))],1)
+test_images= np.stack(test_data).squeeze()
+print("Testing Data: ", test_data.shape)
+print("Testing Image Data: ", test_images.shape)
