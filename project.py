@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-#Adam --> ization algorithm that can used instead of tochastic gradient descent
+#Adam --> optimization algorithm that can used instead of tochastic gradient descent
 #to update network weights iterative based in training data.
 from keras.optimizers import Adam
 from keras.layers.normalization import BatchNormalization
@@ -19,10 +19,15 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 
 train_data = pd.read_json('data/train.json')
+#the angles of inclination seem to be in degrees. For the sake of
+#simplicity, for now we replace them with 0
 train_data.inc_angle = train_data.inc_angle.replace('na',0)
 
+
+#print this to see how the angles of inclination are now replaced with all zeros
 train_data.tail()
 
+#here we are getting our training examples and the output respectively 
 X = train_data.drop(['is_iceberg'], axis=1)
 y = train_data.is_iceberg
 
