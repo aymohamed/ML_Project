@@ -1,3 +1,5 @@
+#Gad, Abdi, Kieran
+
 import warnings
 warnings.filterwarnings('ignore')
 import numpy as np
@@ -7,7 +9,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.optimizers import Adam
+from keras.optimizers import Adam  # imports Adams, an algorithm for stochastic optimization
 from keras.layers.normalization import BatchNormalization
 from keras.utils import np_utils
 from keras.layers import Conv2D, MaxPooling2D, ZeroPadding2D, GlobalAveragePooling2D
@@ -42,7 +44,7 @@ y_train = train_data.is_iceberg
 
 def scale_data(df):
     imgs = []
-    # use for loop inside list, for less code
+    # use for loop inside list
     for index, row in df.iterrows():
         # the data has two bands
         band_1 = np.array(row['band_1']).reshape(75,75)
@@ -81,10 +83,10 @@ model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
 model.add(Dropout(0.2))
 
 # hidden layer 3
-#model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
-#model.add(Activation('relu'))
-#model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-#model.add(Dropout(0.2))
+model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+model.add(Dropout(0.2))
 
 model.add(Flatten())
 
@@ -104,7 +106,7 @@ optimizer = Adam(lr=0.001, decay=0.0)
 model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
 
-# reduce batch_size
+# reduce batch_size to 6
 batch_size = 6
 earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
 save_best_score = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_loss', mode='min')
