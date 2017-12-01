@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #Gad, Abdi, Kieran
 
 import warnings
@@ -74,30 +75,30 @@ model.add(Dropout(0.2))
 # hidden layer 1
 model.add(Conv2D(128,  kernel_size=(3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-model.add(Dropout(0.2))
+model.add(Dropout(0.7))
 
 # hidden layer 2
 model.add(Conv2D(128,  kernel_size=(3, 3),activation='relu'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-model.add(Dropout(0.2))
+model.add(Dropout(0.1))
 
 # hidden layer 3
 model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-model.add(Dropout(0.2))
+model.add(Dropout(0.8))
 
 model.add(Flatten())
 
 # Fully connected layer
 model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.2))
+model.add(Dropout(0.5))
 
 #Dense layer
 
 model.add(Dense(256, activation='relu'))
-model.add(Dropout(0.2))
+model.add(Dropout(0.4))
 
 # Output layer
 model.add(Dense(1, activation="sigmoid"))
@@ -107,13 +108,13 @@ model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accurac
 
 
 # reduce batch_size to 6
-batch_size = 6
+batch_size = 45
 earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
 save_best_score = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_loss', mode='min')
 monitor_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
 
 model.fit(X_train, y_train, batch_size=batch_size,
-          epochs=4 , verbose=1, callbacks=[earlyStopping,
+          epochs=6 , verbose=1, callbacks=[earlyStopping,
           save_best_score, monitor_loss], validation_split=0.45)
 
 
