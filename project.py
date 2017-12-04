@@ -8,6 +8,7 @@ warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
 import datetime
+import csv
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2' #Hide unwanted tf output
 import matplotlib.pyplot as plt
@@ -101,7 +102,7 @@ def createModel():
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     batch_size = 32
-    epochs = 20
+    epochs = 8
 
 
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
@@ -118,24 +119,37 @@ def trainModel(model, X_train, Y_train, X_CV, Y_CV):
 
 def runOnTestData(model):
     X_test = pd.read_json('data/test.json')
+    X_test = X_test
     X_test.inc_angle = X_test.inc_angle.replace('na',0)
-    X_test = scale_data(X_test)
-    pred = model.predict(X_test)
+    X_scaled = scaleData(X_test)
+    pred = model.predict(X_scaled)
+    with open('predictions.csv', 'w') as outputfile:
+        writer = csv.writer(outputfile, dialect='excel')
+        writer.writerow(['id', 'is_iceberg'])
+
+        for i in range(len(X_test)):
+            if pred[i] >= 0.5:
+                writer.writerow([X_test.id[i], '1'])
+            else:
+                writer.writerow([X_test.id[i], '0'])
+
 
 def printModel(model):
-    plot_model(model, to_file='model.png', show_shapes=True)
     model.summary()
 
 def main():
     now = datetime.datetime.now()
     print("*** TEST - " + now.strftime("%Y-%m-%d %H:%M") + " ***")
     X_train, Y_train, X_CV, Y_CV = loadTrainData()
+    print(X_train[:10])
     X_train = scaleData(X_train)
+    print(X_train[:10])
     X_CV = scaleData(X_CV)
     model = createModel()
     printModel(model)
     model = trainModel(model, X_train, Y_train, X_CV, Y_CV)
-
+    runOnTestData(model)
+    
     return
 
 
