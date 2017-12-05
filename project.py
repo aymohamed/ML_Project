@@ -26,7 +26,7 @@ from keras.utils import plot_model
 
 
 def loadTrainData():
-    CVsetSize = 0.2
+    CVsetSize = 0.25
     #loading training data, modifying inc angles and extracting training examples and
     #target values from the data
 
@@ -59,27 +59,28 @@ def createModel():
     print("Dropout Rate: " + str(dropoutRate))
 
     # Input layer
-    model.add(Conv2D(64, kernel_size=(9, 9), input_shape=(75, 75, 2),activation='relu'))
+    model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(75, 75, 2),activation='relu'))
     model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2)))
     model.add(Dropout(dropoutRate))
 
     # hidden layer 1
-    model.add(Conv2D(128,  kernel_size=(6, 6), activation='relu'))
+    model.add(Conv2D(64,  kernel_size=(3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(Dropout(dropoutRate))
     
     # hidden layer 2
-    model.add(Conv2D(128,  kernel_size=(3, 3),activation='relu'))
+    model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(Dropout(dropoutRate))
     
-
+    
     # hidden layer 3
     model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(Dropout(dropoutRate))
+    
 
     model.add(Flatten())
 
@@ -102,7 +103,7 @@ def createModel():
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     batch_size = 32
-    epochs = 8
+    epochs = 20
 
 
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
@@ -119,7 +120,6 @@ def trainModel(model, X_train, Y_train, X_CV, Y_CV):
 
 def runOnTestData(model):
     X_test = pd.read_json('data/test.json')
-    X_test = X_test
     X_test.inc_angle = X_test.inc_angle.replace('na',0)
     X_scaled = scaleData(X_test)
     pred = model.predict(X_scaled)
@@ -128,10 +128,7 @@ def runOnTestData(model):
         writer.writerow(['id', 'is_iceberg'])
 
         for i in range(len(X_test)):
-            if pred[i] >= 0.5:
-                writer.writerow([X_test.id[i], '1'])
-            else:
-                writer.writerow([X_test.id[i], '0'])
+            writer.writerow([X_test.id[i], pred[i][0]])
 
 
 def printModel(model):
@@ -141,9 +138,7 @@ def main():
     now = datetime.datetime.now()
     print("*** TEST - " + now.strftime("%Y-%m-%d %H:%M") + " ***")
     X_train, Y_train, X_CV, Y_CV = loadTrainData()
-    print(X_train[:10])
     X_train = scaleData(X_train)
-    print(X_train[:10])
     X_CV = scaleData(X_CV)
     model = createModel()
     printModel(model)
