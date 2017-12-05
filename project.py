@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import datetime
 import csv
+import re
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2' #Hide unwanted tf output
 import matplotlib.pyplot as plt
@@ -56,20 +57,19 @@ def scaleData(df):
 def createModel():
     model = Sequential()
     dropoutRate = 0.5
-    print("Dropout Rate: " + str(dropoutRate))
-
+    
     # Input layer
     model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(75, 75, 2),activation='relu'))
     model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2)))
     model.add(Dropout(dropoutRate))
 
     # hidden layer 1
-    model.add(Conv2D(64,  kernel_size=(3, 3), activation='relu'))
+    model.add(Conv2D(128,  kernel_size=(3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(Dropout(dropoutRate))
     
     # hidden layer 2
-    model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
+    model.add(Conv2D(256,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
     model.add(Dropout(dropoutRate))
@@ -103,7 +103,7 @@ def createModel():
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     batch_size = 32
-    epochs = 20
+    epochs = 2
 
 
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
@@ -111,12 +111,12 @@ def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     monitor_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
 
     # Use Keras data generators on train set
-    dataGen = ImageDataGenerator(rotation_range=8, width_shift_range=0.08, shear_range=0.3, height_shift_range=0.08, zoom_range=0.08)
+    dataGen = ImageDataGenerator(rotation_range=30, width_shift_range=0.3, shear_range=0.3, height_shift_range=0.3, zoom_range=0.2, horizontal_flip=True, vertical_flip=True)
     dataGen.fit(X_train)
 
-    model.fit_generator(dataGen.flow(X_train, Y_train, batch_size=batch_size), steps_per_epoch=len(X_train) / batch_size, epochs=epochs, verbose=2, callbacks=[earlyStopping, save_best_score, monitor_loss], validation_data=(X_CV, Y_CV))
+    trainResults = model.fit_generator(dataGen.flow(X_train, Y_train, batch_size=batch_size), steps_per_epoch=len(X_train) / batch_size, epochs=epochs, verbose=2, callbacks=[earlyStopping, save_best_score, monitor_loss], validation_data=(X_CV, Y_CV))
 
-    return model
+    return model, trainResults
 
 def runOnTestData(model):
     X_test = pd.read_json('data/test.json')
@@ -131,20 +131,47 @@ def runOnTestData(model):
             writer.writerow([X_test.id[i], pred[i][0]])
 
 
-def printModel(model):
-    model.summary()
+def writeLine(line):
+    outputFile = open('experiments.txt','a')
+    outputFile.write(line + os.linesep)
+    outputFile.close()
+    print(line)
+    return
+
+def getTestNumber():
+    if os.path.exists("experiments.txt"):
+        # Find index of last test
+        outputFile = open('experiments.txt','r')
+        lines = outputFile.readlines()
+        if len(lines) > 0:
+            testNumber = int(re.search(r'\d+', lines[-1]).group())            
+        else:
+            return 1
+        outputFile.close()
+        if testNumber > 0: 
+            return testNumber + 1
+        else:
+            return 1
+    else: 
+        outputFile = open('experiments.txt','w')
+        outputFile.close()
+        return 1
+
 
 def main():
     now = datetime.datetime.now()
-    print("*** TEST - " + now.strftime("%Y-%m-%d %H:%M") + " ***")
+    testNumber = getTestNumber()
+    writeLine(os.linesep + "*** TEST " + str(testNumber) + " - " + now.strftime("%Y-%m-%d %H:%M") + " ***")
     X_train, Y_train, X_CV, Y_CV = loadTrainData()
     X_train = scaleData(X_train)
     X_CV = scaleData(X_CV)
     model = createModel()
-    printModel(model)
-    model = trainModel(model, X_train, Y_train, X_CV, Y_CV)
-    runOnTestData(model)
-    
+    model.summary(print_fn=writeLine)
+    model, trainResults = trainModel(model, X_train, Y_train, X_CV, Y_CV)
+    writeLine("Training set accuracy: " + str(trainResults.history['acc'][-1]))
+    writeLine("CV set accuracy: " + str(trainResults.history['val_acc'][-1]))
+    #runOnTestData(model)
+    writeLine("*** END OF TEST " + str(testNumber))
     return
 
 
