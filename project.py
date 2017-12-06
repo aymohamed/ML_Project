@@ -7,6 +7,9 @@ import warnings
 warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
+import datetime
+import csv
+import re
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2' #Hide unwanted tf output
 import matplotlib 
@@ -24,8 +27,9 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.utils import plot_model
 
+
 def loadTrainData():
-    CVsetSize = 0.2
+    CVsetSize = 0.25
     #loading training data, modifying inc angles and extracting training examples and
     #target values from the data
 
@@ -36,6 +40,7 @@ def loadTrainData():
     Y = train_data.is_iceberg
 
     CVsetSize = int(CVsetSize * len(Y))
+    #return X_train, Y_train, X_CV, Y_CV
     return X[CVsetSize:], Y[CVsetSize:], X[:CVsetSize], Y[:CVsetSize]
 
 def scaleData(df):
@@ -97,7 +102,7 @@ def createModel():
     return model
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
-    batch_size = 15  
+    batch_size = 15 
     epochs = 15
 
 
@@ -118,8 +123,8 @@ def trainModel(model, X_train, Y_train, X_CV, Y_CV):
 def runOnTestData(model):
     X_test = pd.read_json('test.json')
     X_test.inc_angle = X_test.inc_angle.replace('na',0)
-    X_test = scale_data(X_test)
-    pred = model.predict(X_test)
+    X_scaled = scaleData(X_test)
+    pred = model.predict(X_scaled)
     with open('predictions.csv', 'w') as outputfile:
         writer = csv.writer(outputfile, dialect='excel')
         writer.writerow(['id', 'is_iceberg'])
@@ -127,19 +132,50 @@ def runOnTestData(model):
         for i in range(len(X_test)):
             writer.writerow([X_test.id[i], pred[i][0]])
 
-def printModel(model):
-     model.summary()
+
+def writeLine(line):
+    outputFile = open('experiments.txt','a')
+    outputFile.write(line + os.linesep)
+    outputFile.close()
+    print(line)
+    return
+
+def getTestNumber():
+    if os.path.exists("experiments.txt"):
+        # Find index of last test
+        outputFile = open('experiments.txt','r')
+        lines = outputFile.readlines()
+        if len(lines) > 0:
+            testNumber = int(re.search(r'\d+', lines[-1]).group())            
+        else:
+            return 1
+        outputFile.close()
+        if testNumber > 0: 
+            return testNumber + 1
+        else:
+            return 1
+    else: 
+        outputFile = open('experiments.txt','w')
+        outputFile.close()
+        return 1
+
 
 def main():
+    now = datetime.datetime.now()
+    testNumber = getTestNumber()
+    writeLine(os.linesep + "*** TEST " + str(testNumber) + " - " + now.strftime("%Y-%m-%d %H:%M") + " ***")
     X_train, Y_train, X_CV, Y_CV = loadTrainData()
     X_train = scaleData(X_train)
     X_CV = scaleData(X_CV)
     model = createModel()
-    printModel(model)
-    model,history = trainModel(model, X_train, Y_train, X_CV, Y_CV)
-    
+    model.summary(print_fn=writeLine)
+    model, history = trainModel(model, X_train, Y_train, X_CV, Y_CV)
+    writeLine("Training set accuracy: " + str(history.history['acc'][-1]))
+    writeLine("CV set accuracy: " + str(history.history['val_acc'][-1]))
+    writeLine("*** END OF TEST " + str(testNumber))
+
     #summarize accuracy of the model
-    plt.figure(1)
+    plt.figure()
     plt.subplot(111)
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])
@@ -150,7 +186,7 @@ def main():
     plt.savefig('accuracy.png')
 
 
-    plt.figure(2)
+    plt.figure()
     plt.subplot(111)
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -159,12 +195,8 @@ def main():
     plt.xlabel('epoch')
     plt.legend(['train','cv'], loc ='upper left')
     plt.savefig('loss.png')
-
-    runOnTestData(model)
-
     return
 
 
 if __name__ == '__main__':
     main()
-
