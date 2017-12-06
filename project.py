@@ -27,7 +27,7 @@ from keras.utils import plot_model
 
 
 def loadTrainData():
-    CVsetSize = 0.45
+    CVsetSize = 0.25
     #loading training data, modifying inc angles and extracting training examples and
     #target values from the data
 
@@ -100,7 +100,7 @@ def createModel():
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     batch_size = 45
-    epochs = 6
+    epochs = 20
 
 
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
