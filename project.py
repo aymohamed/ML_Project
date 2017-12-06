@@ -27,7 +27,7 @@ from keras.utils import plot_model
 
 
 def loadTrainData():
-    CVsetSize = 0.25
+    CVsetSize = 0.45
     #loading training data, modifying inc angles and extracting training examples and
     #target values from the data
 
@@ -58,52 +58,49 @@ def createModel():
     model = Sequential()
     dropoutRate = 0.5
     
-    # Input layer
+  # Input layer
     model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(75, 75, 2),activation='relu'))
     model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2)))
-    model.add(Dropout(dropoutRate))
+    model.add(Dropout(0.2))
 
     # hidden layer 1
     model.add(Conv2D(128,  kernel_size=(3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(dropoutRate))
-    
+    model.add(Dropout(0.7))
+
     # hidden layer 2
-    model.add(Conv2D(256,  kernel_size=(3, 3),activation='relu'))
+    model.add(Conv2D(128,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(dropoutRate))
-    
-    
+    model.add(Dropout(0.1))
+
     # hidden layer 3
     model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(dropoutRate))
-    
+    model.add(Dropout(0.8))
 
     model.add(Flatten())
 
     # Fully connected layer
     model.add(Dense(512, activation='relu'))
-    model.add(Dropout(dropoutRate))
+    model.add(Dropout(0.5))
 
     #Dense layer
 
     model.add(Dense(256, activation='relu'))
-    model.add(Dropout(dropoutRate))
+    model.add(Dropout(0.4))
 
     # Output layer
-    model.add(Dense(1, activation="sigmoid"))
-
+    model.add(Dense(1, activation="sigmoid")) 
     optimizer = Adam(lr=0.001, decay=0.0)
     model.compile(loss='mean_squared_logarithmic_error', optimizer=optimizer, metrics=['accuracy'])
 
     return model
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
-    batch_size = 32
-    epochs = 2
+    batch_size = 45
+    epochs = 6
 
 
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
