@@ -14,7 +14,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2' #Hide unwanted tf output
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.optimizers import Adam  # imports Adams, an algorithm for stochastic optimization
 from keras.layers.normalization import BatchNormalization
@@ -56,40 +56,43 @@ def scaleData(df):
 
 def createModel():
     model = Sequential()
-    dropoutRate = 0.5
-    
+        
   # Input layer
     model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(75, 75, 2),activation='relu'))
     model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2)))
-    model.add(Dropout(0.2))
+    #model.add(Dropout(0.2))
 
     # hidden layer 1
-    model.add(Conv2D(128,  kernel_size=(3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(0.7))
+    model.add(Conv2D(256,  kernel_size=(3, 3), activation='relu'))
+    #model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+    #model.add(Dropout(0.3))
 
     # hidden layer 2
     model.add(Conv2D(128,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(0.1))
+    #model.add(Dropout(0.4))
+
+    
 
     # hidden layer 3
-    model.add(Conv2D(64,  kernel_size=(3, 3),activation='relu'))
+    model.add(Conv2D(32,  kernel_size=(3, 3),activation='relu'))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    model.add(Dropout(0.8))
+    #model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
+    #model.add(Dropout(0.3))
+
+    
 
     model.add(Flatten())
 
     # Fully connected layer
     model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.2))
 
     #Dense layer
 
     model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.4))
+    model.add(Dropout(0.2))
 
     # Output layer
     model.add(Dense(1, activation="sigmoid")) 
@@ -99,10 +102,11 @@ def createModel():
     return model
 
 def trainModel(model, X_train, Y_train, X_CV, Y_CV):
-    batch_size = 45
-    epochs = 20
+    batch_size = 30
+    epochs = 60
+    initialEpoch = 0
 
-
+    
     earlyStopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
     save_best_score = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True, monitor='val_loss', mode='min')
     monitor_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
@@ -111,7 +115,12 @@ def trainModel(model, X_train, Y_train, X_CV, Y_CV):
     dataGen = ImageDataGenerator(rotation_range=30, width_shift_range=0.3, shear_range=0.3, height_shift_range=0.3, zoom_range=0.2, horizontal_flip=True, vertical_flip=True)
     dataGen.fit(X_train)
 
-    trainResults = model.fit_generator(dataGen.flow(X_train, Y_train, batch_size=batch_size), steps_per_epoch=len(X_train) / batch_size, epochs=epochs, verbose=2, callbacks=[earlyStopping, save_best_score, monitor_loss], validation_data=(X_CV, Y_CV))
+    trainResults = model.fit_generator(dataGen.flow(X_train, Y_train, batch_size=batch_size), steps_per_epoch=len(X_train) / batch_size, epochs=epochs, verbose=2, callbacks=[earlyStopping, save_best_score, monitor_loss], validation_data=(X_CV, Y_CV), initial_epoch=initialEpoch, use_multiprocessing=True)
+
+    #trainResults = model.fit(x=X_train, y=Y_train, steps_per_epoch=len(X_train) / batch_size, epochs=epochs, verbose=1, callbacks=[earlyStopping, save_best_score, monitor_loss], validation_data=(X_CV, Y_CV), initial_epoch=initialEpoch, use_multiprocessing=True)
+
+
+    model.save('trainedModel')
 
     return model, trainResults
 
@@ -163,6 +172,7 @@ def main():
     X_train = scaleData(X_train)
     X_CV = scaleData(X_CV)
     model = createModel()
+    #model = load_model('trainedModel')
     model.summary(print_fn=writeLine)
     model, trainResults = trainModel(model, X_train, Y_train, X_CV, Y_CV)
     writeLine("Training set accuracy: " + str(trainResults.history['acc'][-1]))
